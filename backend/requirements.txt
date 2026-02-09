@@ -1,0 +1,25 @@
+# Core
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+
+# LangChain / LangGraph
+langchain
+langgraph
+langchain-openai
+langchain-community
+
+# Vector Store
+chromadb
+
+# Web Search
+duckduckgo-search
+
+# Document Processing
+pypdf
+python-docx
+
+# Development
+python-dotenv
