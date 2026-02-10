@@ -141,10 +141,7 @@ cd backend
 docker build -t interview-backend .
 
 # Run it locally (uses your existing .env file)
-docker run -d --name interview-backend \
-  -p 8080:8080 \
-  --env-file .env \
-  interview-backend
+docker run -d --name interview-backend -p 8080:8080 --env-file .env interview-backend
 
 cd ..
 ```
@@ -157,14 +154,10 @@ Verify: open [http://localhost:8080/docs](http://localhost:8080/docs) — you sh
 cd frontend
 
 # Build with the local backend URL
-docker build \
-  --build-arg VITE_API_URL=http://localhost:8080/api/v1 \
-  -t interview-frontend .
+docker build --build-arg VITE_API_URL=http://localhost:8080/api/v1 -t interview-frontend .
 
 # Run it locally
-docker run -d --name interview-frontend \
-  -p 3000:8080 \
-  interview-frontend
+docker run -d --name interview-frontend -p 3000:8080 interview-frontend
 
 cd ..
 ```
@@ -259,9 +252,7 @@ cd frontend
 
 # Build with the backend URL baked in
 # Replace the URL below with your actual backend Cloud Run URL from Step 7
-docker build \
-  --build-arg VITE_API_URL=https://interview-backend-xxxxx-uc.a.run.app/api/v1 \
-  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/interview-app/frontend:latest .
+docker build --build-arg VITE_API_URL=https://interview-backend-xxxxx-uc.a.run.app/api/v1 -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/interview-app/frontend:latest .
 
 # Push to Artifact Registry
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/interview-app/frontend:latest
@@ -354,9 +345,7 @@ Then in Cloud Run → `interview-backend` → **Edit & Deploy New Revision** →
 ```bash
 cd interview-app/frontend
 git pull
-docker build \
-  --build-arg VITE_API_URL=https://interview-backend-xxxxx-uc.a.run.app/api/v1 \
-  -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/interview-app/frontend:latest .
+docker build --build-arg VITE_API_URL=https://interview-backend-xxxxx-uc.a.run.app/api/v1 -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/interview-app/frontend:latest .
 docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/interview-app/frontend:latest
 ```
 
