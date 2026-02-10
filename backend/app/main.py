@@ -2,10 +2,12 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from app.config import get_settings
 from app.api.routes import interview, materials
 
+load_dotenv()  # Load .env into os.environ before any LangChain imports
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
