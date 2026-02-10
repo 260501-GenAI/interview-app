@@ -1,6 +1,6 @@
 # Cloud Run + Artifact Registry Deployment Guide
 
-Deploy the Interview Prep Application as **Docker containers** on **Cloud Run**, using **Artifact Registry** for image storage — entirely from the browser.
+Deploy the Interview Prep Application as **Docker containers** on **Cloud Run**, using **Artifact Registry** for image storage.
 
 ---
 
