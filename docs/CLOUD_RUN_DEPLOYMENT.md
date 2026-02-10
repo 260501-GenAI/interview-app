@@ -40,8 +40,6 @@ Deploy the Interview Prep Application as **Docker containers** on **Cloud Run**,
 
 ## Step 3 — Create the Docker Files
 
-These files are already in the repo. If you're building from scratch, create them now.
-
 ### Backend — `backend/Dockerfile`
 
 ```dockerfile
