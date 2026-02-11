@@ -9,6 +9,7 @@ Deploy the Interview Prep Application as **Docker containers** on **Cloud Run**,
 - GCP project with billing enabled
 - OpenAI API key
 - The app repo pushed to GitHub: `https://github.com/260501-GenAI/interview-app.git`
+- **Recommended**: [Google Cloud SDK (gcloud CLI)](https://cloud.google.com/sdk/docs/install) installed locally
 
 ---
 
@@ -35,6 +36,15 @@ Deploy the Interview Prep Application as **Docker containers** on **Cloud Run**,
 | **Region** | `us-central1` |
 
 3. Click **Create**
+
+4. **Grant permissions** (Required for pushing images):
+   1. Select the `interview-app` repository checkbox.
+   2. Click **SHOW INFO PANEL** in the top-right corner (if not already visible).
+   3. In the "Permissions" tab, click **ADD PRINCIPAL**.
+   4. In "New principals", enter your Google account email.
+   5. Select the role: **Artifact Registry** > **Artifact Registry Writer**.
+   6. Click **ADD ANOTHER ROLE** and select: **Artifact Registry** > **Artifact Registry Administrator**.
+   7. Click **SAVE**.
 
 ---
 
@@ -175,29 +185,44 @@ docker rm interview-backend interview-frontend
 
 ---
 
-## Step 5 — Open Cloud Shell
+## Step 5 — Set up Google Cloud SDK (Local Machine)
 
-1. Click the **Cloud Shell** icon (terminal icon, top-right of the GCP Console)
-2. A browser-based terminal opens at the bottom of the screen
-3. Clone the repo:
+Instead of using Cloud Shell (which can be unreliable for large Docker pushes), we recommend running commands from your local machine.
 
-```bash
-git clone https://github.com/260501-GenAI/interview-app.git
-cd interview-app
-```
+1. **Install the Google Cloud SDK**:
+   - [Download and Install gcloud CLI](https://cloud.google.com/sdk/docs/install) for your OS.
+
+2. **Initialize gcloud**:
+   Open your local terminal (PowerShell, Command Prompt, or Terminal) and run:
+   ```bash
+   gcloud init
+   ```
+   Follow the prompts to log in and select your project.
+
+3. **Install the Docker credential helper**:
+   This configures Docker to authenticate with Artifact Registry.
+   ```bash
+   gcloud auth configure-docker us-central1-docker.pkg.dev
+   ```
+
+4. **Clone the repo (if you haven't already)**:
+   ```bash
+   git clone https://github.com/260501-GenAI/interview-app.git
+   cd interview-app
+   ```
 
 ---
 
 ## Step 6 — Build and Push the Backend Image
 
-In Cloud Shell:
+In your local terminal:
 
 ```bash
 # Set your project ID
 export PROJECT_ID=$(gcloud config get-value project)
 export REGION=us-central1
 
-# Configure Docker to push to Artifact Registry
+# Configure Docker to push to Artifact Registry (if you skipped Step 5.3)
 gcloud auth configure-docker ${REGION}-docker.pkg.dev
 
 # Build the backend image
@@ -245,7 +270,7 @@ cd ..
 
 ## Step 8 — Build and Push the Frontend Image
 
-Back in Cloud Shell:
+Back in your local terminal:
 
 ```bash
 cd frontend
