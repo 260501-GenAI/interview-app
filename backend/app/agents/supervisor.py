@@ -16,7 +16,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import interrupt
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-
+from langchain_google_genai import ChatGoogleGenerativeAI
 from app.config import get_settings
 
 
@@ -44,7 +44,7 @@ MODEL_MAP = {
     "vertex": {
         "context": "gemini-2.0-flash",
         "question": "gemini-2.0-flash",
-        "assessment": "gemini-3.0-pro-preview",
+        "assessment": "gemini-3-pro-preview",
     },
 }
 
@@ -79,7 +79,7 @@ def get_model(role: str):
             model_provider="google_genai",
             vertexai=True,
             project=settings.gcp_project_id,
-            location=settings.gcp_location,
+            location='global',
             **common_kwargs
         )
         
@@ -123,6 +123,17 @@ class InterviewState(TypedDict):
 
 # ============ Node Functions ============
 
+# ============ Helper Functions ============
+
+def _get_content_string(response) -> str:
+    """Helper to safely extract string content from LLM response."""
+    content = response.content
+    if isinstance(content, list):
+        # Join list elements if they are strings
+        return "".join([str(c) for c in content]).strip()
+    return str(content).strip()
+
+
 def gather_context_node(state: InterviewState) -> dict:
     """
     Gather context from materials and/or research the topic.
@@ -144,9 +155,11 @@ Identify 3-5 key areas that should be assessed in an interview about this topic.
     
     response = model.invoke(messages)
     
+    content = _get_content_string(response)
+    
     return {
-        "messages": [AIMessage(content=f"[Context Analysis] {response.content}")],
-        "context": response.content  # Overwrite with enriched context
+        "messages": [AIMessage(content=f"[Context Analysis] {content}")],
+        "context": content  # Overwrite with enriched context
     }
 
 
@@ -186,7 +199,7 @@ not just recall. Be encouraging but maintain professionalism."""),
     ]
     
     response = model.invoke(messages)
-    question = response.content.strip()
+    question = _get_content_string(response)
     
     # Update counts based on question type
     new_question_count = state["question_count"]
@@ -236,7 +249,7 @@ Assess this answer:""")
     ]
     
     response = model.invoke(messages)
-    assessment_text = response.content
+    assessment_text = _get_content_string(response)
     
     # Parse assessment (simple parsing - production would use structured output)
     assessment = _parse_assessment(assessment_text)
