@@ -17,7 +17,80 @@ from langgraph.types import interrupt
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-from app.config import Settings
+from app.config import get_settings
+
+
+# ============ Swappable Model Provider Pattern ============
+#
+# Switch ALL models between providers with a single env var:
+#   LLM_PROVIDER=openai   → OpenAI GPT models (default)
+#   LLM_PROVIDER=vertex   → Vertex AI Model Garden (mix of Gemini, Claude, Mistral)
+#
+# The "vertex" provider demonstrates mix-and-match: each node uses a
+# different model family chosen for its strengths at that task.
+# All Vertex AI models authenticate via one GCP service account —
+# no separate API keys needed per provider.
+#
+
+MODEL_MAP = {
+    # ── OpenAI (direct API) ──
+    "openai": {
+        "context": "gpt-4o-mini",
+        "question": "gpt-4o-mini",
+        "assessment": "gpt-4o-mini",
+    },
+
+    # ── Vertex AI (Gemini Only - Unified SDK) ──
+    "vertex": {
+        "context": "gemini-2.0-flash",
+        "question": "gemini-2.0-flash",
+        "assessment": "gemini-3.0-pro-preview",
+    },
+}
+
+
+def get_model(role: str):
+    """
+    Get the appropriate chat model for a given node role.
+    
+    Swappable Provider Pattern:
+        - Reads LLM_PROVIDER from settings
+        - Maps the role to the optimized model for that provider
+        - Returns a LangChain-compatible chat model instance via init_chat_model
+    """
+    settings = get_settings()
+    llm_provider = settings.llm_provider
+    
+    if llm_provider not in MODEL_MAP:
+        raise ValueError(
+            f"Unknown model provider: '{llm_provider}'. "
+            f"Supported: {list(MODEL_MAP.keys())}"
+        )
+    
+    model_name = MODEL_MAP[llm_provider][role]
+    
+    # Configure init_chat_model parameters based on provider
+    common_kwargs = {"temperature": 0}
+    
+    if llm_provider == "vertex":
+        # Use google_genai provider with vertexai=True for the Unified SDK
+        return init_chat_model(
+            model=model_name,
+            model_provider="google_genai",
+            vertexai=True,
+            project=settings.gcp_project_id,
+            location=settings.gcp_location,
+            **common_kwargs
+        )
+        
+    elif llm_provider == "openai":
+         return init_chat_model(
+             model=model_name, 
+             model_provider="openai", 
+             **common_kwargs
+         )
+
+    raise ValueError(f"Provider {llm_provider} not fully configured in get_model")
 
 
 # ============ State Definition ============
@@ -55,7 +128,7 @@ def gather_context_node(state: InterviewState) -> dict:
     Gather context from materials and/or research the topic.
     This prepares the context for question generation.
     """
-    model = init_chat_model("openai:gpt-4o-mini")
+    model = get_model("context")
     
     messages = [
         SystemMessage(content="""You are a Document Analyst. Analyze the provided 
@@ -82,7 +155,7 @@ def generate_question_node(state: InterviewState) -> dict:
     Generate the next interview question based on context.
     Returns ONE question at a time to simulate real interview.
     """
-    model = init_chat_model("openai:gpt-4o-mini")
+    model = get_model("question")
     
     # Determine if this is a follow-up or new question
     is_followup = state.get("needs_followup", False) and state["followup_count"] < state["max_followups"]
@@ -141,7 +214,7 @@ def assess_answer_node(state: InterviewState) -> dict:
     Assess the candidate's answer and determine if follow-up is needed.
     Uses structured output for consistent assessment format.
     """
-    model = init_chat_model("openai:gpt-4o-mini")
+    model = get_model("assessment")
     
     messages = [
         SystemMessage(content="""You are a Performance Critic assessing interview answers.
@@ -345,8 +418,10 @@ def get_interview_graph():
     return build_interview_graph()
 
 
-def create_interview_session(settings: Settings) -> dict:
+def create_interview_session(settings=None) -> dict:
     """Create initial state for a new interview session."""
+    if settings is None:
+        settings = get_settings()
     return {
         "messages": [],
         "topic": "",
@@ -365,7 +440,7 @@ def create_interview_session(settings: Settings) -> dict:
 
 # ============ Convenience Functions for API ============
 
-async def start_interview(topic: str, context: str, settings: Settings, thread_id: str):
+async def start_interview(topic: str, context: str, thread_id: str, settings=None):
     """
     Start an interview session and generate the first question.
     

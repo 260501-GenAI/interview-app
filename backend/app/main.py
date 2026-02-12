@@ -14,7 +14,23 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler for startup/shutdown."""
     # Startup
     settings = get_settings()
+    
+    # Initialize GCP Auth (if env var set)
+    settings.setup_gcp_auth()
+    
     print(f"Starting {settings.app_name} v{settings.app_version}")
+    print(f"Model Provider: {settings.llm_provider}")
+    
+    # Debug: Check Vertex AI dependencies if configured
+    if settings.llm_provider == "vertex":
+        try:
+            import langchain_google_genai
+            print(f"Vertex AI Check: langchain_google_genai imported successfully.")
+        except ImportError as e:
+            print(f"Vertex AI Check FAILED: Could not import langchain_google_genai. Error: {e}")
+        except Exception as e:
+            print(f"Vertex AI Check FAILED: Unexpected error importing langchain_google_genai. Error: {e}")
+
     yield
     # Shutdown
     print("Shutting down...")

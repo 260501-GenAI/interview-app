@@ -9,6 +9,7 @@ pydantic-settings
 langchain
 langgraph
 langchain-openai
+langchain-google-genai
 langchain-community
 
 # Vector Store
